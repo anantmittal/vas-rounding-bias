@@ -1,0 +1,71 @@
+```{r}
+library("rstan")
+library(rethinking)
+library(ggplot2) 
+library(gtools)
+library(brms)
+library(dplyr)
+options(mc.cores = parallel::detectCores())
+rstan_options(auto_write = TRUE)
+```
+
+```{r}
+
+d = read.csv('SliderBias-PctStudy.tsv', sep='\t') %>%
+  mutate(expected_rating = expected_rating/100, rating = rating/100) %>% 
+  filter(expected_rating!=0.0 & expected_rating!=1.0 & rating!=0.0 & rating!=1.0)
+
+```
+
+
+```{r}
+
+d <- read.csv('SliderBias-PctStudy.tsv', sep='\t')
+d$expected_rating = d$expected_rating/100
+d$rating = d$rating/100
+d_new <- d[d$expected_rating!=0.0 & d$expected_rating!=1.0 & d$rating!=0.0 & d$rating!=1.0, ]
+```
+
+```{r}
+sub_d = sample_n(d_new, 100)
+```
+
+
+```{r}
+standata = list(
+  rating=d_new$rating,
+  expected_rating=d_new$expected_rating,
+  N=nrow(d_new)
+)
+```
+
+```{r}
+sub_standata = list(
+  rating=sub_d$rating,
+  expected_rating=sub_d$expected_rating,
+  N=nrow(sub_d)
+)
+```
+
+
+```{r}
+fit <- stan(file = 'vas-model.stan', data = sub_standata, 
+            iter = 1000, chains = 4)
+```
+```{r}
+fit
+```
+```{r}
+y <- as.data.frame(fit)
+```
+
+```{r}
+y
+```
+```{r}
+sim_exp_rating <- seq(from=0, to=1, length.out=100)
+```
+
+
+
+

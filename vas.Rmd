@@ -1,0 +1,92 @@
+## Let's load the libraries
+
+```{r}
+library(plyr)
+library(tidyverse)
+library(magrittr)
+library(ggplot2)
+library(rstan)
+library(modelr)
+library(rlang)
+library(GGally)
+library(tidybayes)            # install from github
+library(tidybayes.rethinking) # install from github
+library(gganimate)            # install from github
+library(rethinking)
+
+
+theme_set(theme_light())
+options(mc.cores = parallel::detectCores())
+rstan_options(auto_write = TRUE)
+```
+
+## Let's create and normalize the dataframe
+
+```{r}
+
+d = read.csv('SliderBias-PctStudy.tsv', sep='\t') %>%
+  mutate(expected_rating = expected_rating/100, rating = rating/100) %>% 
+  filter(expected_rating!=0.0 & expected_rating!=1.0 & rating!=0.0 & rating!=1.0) %>% 
+  sample_n(100)
+
+```
+
+## Convert the data to the format stan needs
+
+```{r}
+standata = list(
+  rating=d$rating,
+  expected_rating=d$expected_rating,
+  N=nrow(d)
+)
+```
+
+## Fit the model
+
+```{r}
+fit <- stan(file = 'vas-model.stan', data = standata, 
+            iter = 1000, chains = 4)
+```
+
+```{r}
+y <- as.data.frame(fit) 
+```
+
+## Simulate expected_ratings
+```{r}
+
+sim_df <-  seq(from=0, to=1, length.out=100) %>% 
+    as.data.frame() %>% 
+      subset(. != 0 & . != 1 ) %>% 
+        plyr::rename(c("."="sim_exp_rating"))
+
+```
+
+
+## Calculate mu and merge 
+```{r}
+
+merge(y, sim_df, all = TRUE) %>% 
+ mutate(mu  = inv_logit(a + b * logit(sim_exp_rating)))
+
+```
+
+## Try plotting
+
+Aesthetics must be either length 1 or the same as the data (196000): y, x error comes when try to Knit the below code. 
+
+```{r}
+
+#merge(y, sim_df, all = TRUE) %>% 
+#  mutate(mu  = inv_logit(a + b * logit(sim_exp_rating))) %>% 
+#    ggplot(aes(x= .))+
+#      stat_lineribbon(aes(y = mu), .prob = c(.99, .9, .8, .5)) +
+#      scale_fill_brewer() +
+#      ggtitle("Test Plot")
+
+
+```
+
+
+
+
