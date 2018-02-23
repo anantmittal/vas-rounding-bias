@@ -1,3 +1,11 @@
+---
+title: "First try in fitting a model"
+output:
+  github_document:
+    toc: true
+---
+
+
 ## Let's load the libraries
 
 ```{r}
