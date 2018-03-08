@@ -9,7 +9,6 @@ output:
 ## Let's load the libraries
 
 ```{r}
-library(plyr)
 library(tidyverse)
 library(magrittr)
 library(ggplot2)
@@ -21,6 +20,7 @@ library(tidybayes)            # install from github
 library(tidybayes.rethinking) # install from github
 library(gganimate)            # install from github
 library(rethinking)
+library(shinystan)
 
 
 theme_set(theme_light())
@@ -35,7 +35,7 @@ rstan_options(auto_write = TRUE)
 d = read.csv('SliderBias-PctStudy.tsv', sep='\t') %>%
   mutate(expected_rating = expected_rating/100, rating = rating/100) %>% 
   filter(expected_rating!=0.0 & expected_rating!=1.0 & rating!=0.0 & rating!=1.0) %>% 
-  sample_n(100)
+  sample_n(1000)
 
 ```
 
@@ -60,6 +60,22 @@ fit <- stan(file = 'vas-model.stan', data = standata,
 y <- as.data.frame(fit) 
 ```
 
+```{r}
+pairs(y)
+```
+```{r}
+show(fit)
+```
+
+```{r}
+plot(fit)
+```
+
+```{r, eval = FALSE}
+#launch_shinystan(fit)
+```
+
+
 ## Simulate expected_ratings
 ```{r}
 
@@ -74,8 +90,8 @@ sim_df <-  seq(from=0, to=1, length.out=100) %>%
 ## Calculate mu and merge 
 ```{r}
 
-merge(y, sim_df, all = TRUE) %>% 
- mutate(mu  = inv_logit(a + b * logit(sim_exp_rating)))
+d_new = merge(y, sim_df, all = TRUE) %>% 
+ mutate(mu  = inv_logit(a + b * logit(sim_exp_rating)), pred = rbeta(n(), (mu * v) , (1 - mu) * v))
 
 ```
 
@@ -85,13 +101,13 @@ Aesthetics must be either length 1 or the same as the data (196000): y, x error 
 
 ```{r}
 
-#merge(y, sim_df, all = TRUE) %>% 
-#  mutate(mu  = inv_logit(a + b * logit(sim_exp_rating))) %>% 
-#    ggplot(aes(x= .))+
-#      stat_lineribbon(aes(y = mu), .prob = c(.99, .9, .8, .5)) +
-#      scale_fill_brewer() +
-#      ggtitle("Test Plot")
-
+d_new %>% 
+    ggplot(aes(x= sim_exp_rating))+
+    stat_lineribbon(aes(y = pred-sim_exp_rating), .prob = c(.99, .9, .8, .5)) +
+    geom_point(aes(y=rating-expected_rating, x = expected_rating), data = d, alpha=0.3) +
+      
+    scale_fill_brewer() +
+      ggtitle("Test Plot")
 
 ```
 
