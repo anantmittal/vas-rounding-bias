@@ -39,6 +39,40 @@ d = read.csv('SliderBias-PctStudy.tsv', sep='\t') %>%
 
 ```
 
+## Map user_number to values starting from 1
+
+```{r}
+unique_user_values = unique(d$user_number)
+user_values = 1:length(unique_user_values)
+names(user_values) <- unique_user_values
+
+```
+
+```{r}
+user_values
+```
+
+
+
+```{r}
+convert_user_number_to_counter <- function(user_number){
+  as.integer(unlist(user_values[[toString(user_number)]]))
+}
+```
+
+
+
+```{r}
+typeof (convert_user_number_to_counter(4049))
+```
+
+
+```{r}
+d$user_number <- sapply(d$user_number, convert_user_number_to_counter)
+```
+
+
+
 ## Convert the data to the format stan needs
 
 ```{r}
@@ -111,6 +145,26 @@ d_new %>%
 
 ```
 
+# Multi-level modeling
 
+```{r}
+standata_ml = list(
+  rating=d$rating,
+  expected_rating=d$expected_rating,
+  user_number = d$user_number,
+  N=nrow(d),
+  k=max(d$user_number)
+)
+```
+
+
+```{r}
+fit_ml <- stan(file = 'vas-model-multilevel.stan', data = standata_ml, 
+            iter = 1000, chains = 4)
+```
+
+```{r}
+y_ml <- as.data.frame(fit_ml) 
+```
 
 
