@@ -160,7 +160,7 @@ standata_ml = list(
 
 ```{r}
 fit_ml <- stan(file = 'vas-model-multilevel.stan', data = standata_ml, 
-            iter = 1000, chains = 4)
+            iter = 1000, chains = 4, control=list(adapt_delta=0.9))
 ```
 
 ```{r}
